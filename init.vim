@@ -46,7 +46,7 @@
     " Interactive command execution in Vim.
     call dein#add('Shougo/vimproc.vim', {'build': 'make'})
     " A code-completion engine for Vim
-    call dein#add('Valloric/YouCompleteMe', {'build': './install.sh --clang-completer'})
+    call dein#add('Valloric/YouCompleteMe', {'build': 'python2 install.py --clang-completer'})
 "}}} -----------------------------------------------------------------------------------------------
 
 ">> Text-Objects <<{{{ -----------------------------------------------------------------------------
@@ -174,8 +174,10 @@
     call dein#add('toshi32tony3/vim-unite-cscope')
     " Create temporary file for memo, testing, ...
     call dein#add('Shougo/junkfile.vim')
-    " A Vim plugin for visually displaying indent levels in code
-    call dein#add('nathanaelkane/vim-indent-guides')
+    " Extended session management for Vim (:mksession on steroids)
+    call dein#add('xolox/vim-session')
+    " Miscellaneous auto-load Vim scripts
+    call dein#add('xolox/vim-misc')
 "}}} -----------------------------------------------------------------------------------------------
 
     " Required:
@@ -648,6 +650,12 @@
     let g:airline#extensions#tagbar#flags = 'f'
     " disable ailine in preview window
     let g:airline_exclude_preview = 1
+    " display tabline in airline style
+    let g:airline#extensions#tabline#enabled = 1
+    " don't display buffers in tabline
+    let g:airline#extensions#tabline#show_buffers = 0
+    " display tabline iff more than one tab is opend
+    let g:airline#extensions#tabline#tab_min_count = 2
 "}}}
 
 " >> Vim Lexical << {{{
@@ -732,7 +740,7 @@
     highlight link SyntasticWarningLine SyntasticWarning
 
     " TODO check movint through errors
-    "let g:syntastic_always_populate_loc_list = 1
+    let g:syntastic_always_populate_loc_list = 1
     "let g:syntastic_auto_loc_list = 1
     " run multiple checkers and combine results
     let g:syntastic_aggregate_errors = 1
@@ -784,7 +792,7 @@
                 \ -direction=dynamicbottom
                 \ -prompt-direction=below
                 \ -buffer-name=buffers
-                \ buffer <cr>
+                \ buffer tab:no-current<cr>
     " Setup Unite for GNU global tags
     "let g:unite_source_gtags_project_config = {'_':{ 'treelize': 1 }}
     nnoremap <space>c :Unite
@@ -831,6 +839,27 @@
     let g:gundo_playback_delay=0
 "}}}
 
+" >> vim-session << {{{
+    " save the session automatically
+    let g:session_autosave ='yes'
+    " autosave interval in minutes
+    let g:session_autosave_periodic = 1
+    " do the autosave silently
+    let g:session_autosave_silent = 1
+    " don't do autoload of sessions
+    let g:session_autoload = 'no'
+    " the location of session scripts
+    let g:session_directory = "~/.local/share/nvim/sessions"
+    "
+"}}}
+
+" >> startify << {{{
+    " set startify session dir
+    let g:startify_session_dir = g:session_directory
+    " set cwd to VCS dir of file
+    let g:startify_change_to_vcs_root = 1
+"}}}
+
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "}}}
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -854,12 +883,16 @@
     set hidden
     " open vsplit on the righ
     set splitright
+    " lines above & below the cursor
+    set scrolloff=5
 
 " >> NeoVim Settings << {{{
     " map ESC to exit insert mode in terminal
     if exists(':tnoremap')
         tnoremap <Esc> <C-\><C-n>
     endif
+    " start insert mode if terminal win is entered
+    autocmd BufWinEnter,WinEnter term://* startinsert
 "}}}
 
 " >> GUI settings << {{{
@@ -905,9 +938,11 @@
     set foldclose=
     " width of fold column
     set fdc=2
-    " open folds automatically
-    "autocmd Syntax * normal zR
-    "autocmd BufEnter * normal zR
+    " Don't screw up folds when inserting text that might affect them, until
+    " leaving insert mode. Foldmethod is local to the window. Protect against
+    " screwing up folding when switching between windows.
+    autocmd InsertEnter * if !exists('w:last_fdm') | let w:last_fdm=&foldmethod | setlocal foldmethod=manual | endif
+    autocmd InsertLeave,WinLeave * if exists('w:last_fdm') | let &l:foldmethod=w:last_fdm | unlet w:last_fdm | endif
 "}}}
 
 " >> View & Session stuff << {{{
@@ -1276,7 +1311,7 @@ augroup END
 " get svn commit message from last git commit
 augroup Git2Svn
     autocmd!
-    autocmd VimEnter * if @% == 'svn-commit.tmp' | :execute ':0 | :read !git log -1 --pretty=\%B' | endif
+    autocmd VimEnter * if @% == 'svn-commit.tmp' | :execute ':0 | :read !git log -1 --pretty=\%B' | :execute ':0 | :delete' | endif
 augroup END
 
 " open help vertically on the right
