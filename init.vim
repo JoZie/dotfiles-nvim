@@ -40,13 +40,21 @@
     call dein#add('joedicastro/vim-molokai256')
     " precision colorscheme for the vim text editor
     call dein#add('altercation/vim-colors-solarized')
+    " Retro groove color scheme for Vim
+    call dein#add('morhetz/gruvbox')
 "}}} -----------------------------------------------------------------------------------------------
 
 ">> General tools & libraries <<{{{ ----------------------------------------------------------------
     " Interactive command execution in Vim.
     call dein#add('Shougo/vimproc.vim', {'build': 'make'})
     " A code-completion engine for Vim
-    call dein#add('Valloric/YouCompleteMe', {'build': 'python2 install.py --clang-completer'})
+    call dein#add('Valloric/YouCompleteMe', {'build': './install.py --clang-completer'})
+    " utility comamnds of dein.vim with rich completion.
+    call dein#add('haya14busa/dein-command.vim')
+    " Library of VimL functions
+    call dein#add('LucHermitte/lh-vim-lib')
+    " Extended session management for Vim (:mksession on steroids)
+    call dein#add('xolox/vim-session')
 "}}} -----------------------------------------------------------------------------------------------
 
 ">> Text-Objects <<{{{ -----------------------------------------------------------------------------
@@ -86,6 +94,8 @@
     call dein#add('tpope/vim-commentary')
     " Vim plug-in for the Perl module / CLI script 'ack' (compatible witch ag)
     call dein#add('mileszs/ack.vim')
+    " " Vim bindings for rtags, llvm/clang based c++ code indexer.
+    " call dein#add('lyuts/vim-rtags')
 "}}} -----------------------------------------------------------------------------------------------
 
 ">> Motions & commands <<{{{ -----------------------------------------------------------------------
@@ -120,9 +130,11 @@
     call dein#add('mhinz/vim-startify')
     " rainbow parentheses improved, shorter code, no level limit, smooth and fast, powerful configuration.
     call dein#add('luochen1990/rainbow')
+    " Search context in Vim in a sidebar using `ag` output http://ddrscott.github.io/blog/2016/side-search/
+    call dein#add('ddrscott/vim-side-search')
 "}}} -----------------------------------------------------------------------------------------------
 
-">> SCM stuff <<{{{ -------------------------------------------------------------------------
+">> SCM stuff <<{{{ --------------------------------------------------------------------------------
     " fugitive.vim: a Git wrapper so awesome, it should be illegal
     call dein#add('tpope/vim-fugitive')
     " A new way to use git within vim
@@ -174,10 +186,15 @@
     call dein#add('toshi32tony3/vim-unite-cscope')
     " Create temporary file for memo, testing, ...
     call dein#add('Shougo/junkfile.vim')
-    " Extended session management for Vim (:mksession on steroids)
-    call dein#add('xolox/vim-session')
     " Miscellaneous auto-load Vim scripts
     call dein#add('xolox/vim-misc')
+    " Dark powered asynchronous completion framework for neovim
+    call dein#add('Shougo/deoplete.nvim')
+    " A neocomplcache plugin for English, using look command
+    call dein#add('ujihisa/neco-look')
+    " The missing motion for Vim
+    call dein#add('justinmk/vim-sneak')
+
 "}}} -----------------------------------------------------------------------------------------------
 
     " Required:
@@ -212,7 +229,7 @@
         let g:default_context = {
             \ 'winheight' : 15,
             \ 'update_time' : 200,
-            \ 'truncate_width' : 90,
+            \ 'truncate_width' : 10,
             \ 'prompt' : '=> ',
             \ 'enable_start_insert' : 0,
             \ 'enable_short_source_names' : 0,
@@ -622,7 +639,7 @@
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 " >> UltiSnips << {{{
-    let g:UltiSnipsExpandTrigger="<C-TAB>"
+    let g:UltiSnipsExpandTrigger="`"
 
     " If you prefer the Omni-Completion tip window to close when a selection is
     " made, these lines close it on movement in insert mode or when leaving
@@ -639,9 +656,9 @@
     " Always show the statusline
     set laststatus=2
     " Necessary to show Unicode glyphs
-    set encoding=utf-8
+    " set encoding=utf-8
     " Use Powerline fonts with unicode glyphes
-    set  guifont=DejaVu\ Sans\ Mono\ for\ Powerline\ 10
+    " set  guifont=DejaVu\ Sans\ Mono\ for\ Powerline\ 10
     let g:airline_powerline_fonts = 1
     " Rename special buffers
     let g:airline#extensions#quickfix#quickfix_text = 'Quickfix'
@@ -660,7 +677,7 @@
 
 " >> Vim Lexical << {{{
     filetype plugin indent on
-    let g:lexical#spell = 1
+    let g:lexical#spell = 0
     let g:lexical#spelllang = ['en','de',]
     let g:lexical#dictionary = ['/usr/share/dict/british-english',
                   \ '/usr/share/dict/american-english',
@@ -680,7 +697,7 @@
     " switchoff confirmation of loading .ycm_extra_conf.py
     let g:ycm_confirm_extra_conf = 0
     " enable completion in all filetypes
-    let g:ycm_filetype_blacklist = {}
+    let g:ycm_filetype_blacklist = {'tex':1}
     " enable completion within comments
     let g:ycm_complete_in_comments = 1
     " get completion out of tag files
@@ -693,6 +710,26 @@
     "let g:ycm_show_diagnostics_ui = 0
 "}}}
 
+" >> deoplete << {{{
+    " Use deoplete.
+    " let g:deoplete#enable_at_startup = 1
+    " augroup deoplete
+    "     autocmd!
+    "     autocmd FileType * let b:deoplete_sources = ['look']
+    " augroup END
+
+    " <C-h>, <BS>: close popup and delete backword char.
+    inoremap <expr><C-h> deoplete#smart_close_popup()."\<C-h>"
+    inoremap <expr><BS>  deoplete#smart_close_popup()."\<C-h>"
+
+    " <CR>: close popup and save indent.
+    inoremap <silent> <CR> <C-r>=<SID>my_cr_function()<CR>
+    function! s:my_cr_function() abort
+        return deoplete#close_popup() . "\<CR>"
+    endfunction
+
+"}}}
+"
 " >> TagBar << {{{
     "augroup TagbarAucmd
     "autocmd!
@@ -728,16 +765,22 @@
 
 " >> Syntastic << {{{
     " don't use signs for errors
-    let g:syntastic_enable_signs = 0
-    let g:syntastic_enable_highlighting = 1
+    let g:syntastic_enable_signs = 1
+    " let g:syntastic_error_symbol = "\u26A1"
+    " let g:syntastic_warning_symbol = "\u26A0"
+    let g:syntastic_enable_highlighting = 0
     " 
-    let g:syntastic_cpp_checkers=[ "clang_check", "cppcheck" ]
-    let g:syntastic_c_checkers=[ "clang_check", "cppcheck" ]
+    let g:syntastic_cpp_checkers=[ "clang_tidy", "cppcheck" ]
+    let g:syntastic_c_checkers=[ "clang_tidy", "cppcheck" ]
+    " let g:syntastic_cpp_checkers=[ "clang_check", "cppcheck" ]
+    " let g:syntastic_c_checkers=[ "clang_check", "cppcheck" ]
     " link hl groups to color scheme ones
-    highlight link SyntasticWarning VisualNOS
-    highlight link SyntasticError Error
-    highlight link SyntasticErrorLine SyntasticError
-    highlight link SyntasticWarningLine SyntasticWarning
+    " highlight link SyntasticWarningLine WarningMsg
+    " highlight link SyntasticErrorLine ErrorMsg
+    " highlight link SyntasticWarning VisualNOS
+    " highlight link SyntasticError Error
+    " highlight link SyntasticErrorLine SyntasticError
+    " highlight link SyntasticWarningLine SyntasticWarning
 
     " TODO check movint through errors
     let g:syntastic_always_populate_loc_list = 1
@@ -792,7 +835,7 @@
                 \ -direction=dynamicbottom
                 \ -prompt-direction=below
                 \ -buffer-name=buffers
-                \ buffer tab:no-current<cr>
+                \ buffer tab:no-current window:no-current<cr>
     " Setup Unite for GNU global tags
     "let g:unite_source_gtags_project_config = {'_':{ 'treelize': 1 }}
     nnoremap <space>c :Unite
@@ -878,6 +921,7 @@
     " enable modeline
     set modeline
     " enable SmartCase
+    set ignorecase
     set smartcase
     " enable hidden buffers
     set hidden
@@ -885,21 +929,10 @@
     set splitright
     " lines above & below the cursor
     set scrolloff=5
-
-" >> NeoVim Settings << {{{
-    " map ESC to exit insert mode in terminal
-    if exists(':tnoremap')
-        tnoremap <Esc> <C-\><C-n>
-    endif
-    " start insert mode if terminal win is entered
-    autocmd BufWinEnter,WinEnter term://* startinsert
-"}}}
+    " incremental preview of commands
+    set inccommand=split
 
 " >> GUI settings << {{{
-    " use 256 colors
-    set t_Co=256
-    " select colorscheme
-    colorscheme badwolf
     " Always show the statusline
     set laststatus=2
     " show linenumbers
@@ -912,9 +945,21 @@
     set relativenumber
 "}}}
 
-" >> Highlighting << {{{
+" >> Highlighting & Colors << {{{
     " swich-on syntax highlighting
     syntax on
+    " use 24-bit color
+    set t_Co=256
+    set termguicolors
+    " select colorscheme
+    set background=dark
+    let g:gruvbox_contrast_dark='hard'
+    let g:gruvbox_invert_selection=0
+    let g:gruvbox_italic=1
+    let g:gruvbox_inverse=1
+    let g:gruvbox_sign_column='dark0_hard'
+    let g:gruvbox_number_column='dark0_hard'
+    colorscheme gruvbox
     " highlight current cursor line
     set cursorline
     " highlight specific column
@@ -927,6 +972,9 @@
     hi DiffDelete cterm=none ctermfg=fg ctermbg=124 gui=none guifg=fg guibg=#af0000
     hi DiffChange cterm=none ctermfg=bg ctermbg=227 gui=none guifg=bg guibg=#ffff5f
     hi DiffText cterm=none ctermfg=fg ctermbg=208 gui=none guifg=fg guibg=#ff8700
+    " turn off highlighting for fold column an line
+    hi Folded ctermbg=NONE guibg=NONE
+    hi FoldColumn ctermbg=NONE guibg=NONE
 "}}}
 
 " >> Folding << {{{
@@ -937,12 +985,37 @@
     " do not automatically close folds
     set foldclose=
     " width of fold column
-    set fdc=2
+    set fdc=1
     " Don't screw up folds when inserting text that might affect them, until
     " leaving insert mode. Foldmethod is local to the window. Protect against
     " screwing up folding when switching between windows.
-    autocmd InsertEnter * if !exists('w:last_fdm') | let w:last_fdm=&foldmethod | setlocal foldmethod=manual | endif
-    autocmd InsertLeave,WinLeave * if exists('w:last_fdm') | let &l:foldmethod=w:last_fdm | unlet w:last_fdm | endif
+    " autocmd InsertEnter * if !exists('w:last_fdm') | let w:last_fdm=&foldmethod | setlocal foldmethod=manual | endif
+    " autocmd InsertLeave,WinLeave * if exists('w:last_fdm') | let &l:foldmethod=w:last_fdm | unlet w:last_fdm | endif
+    " custom fold text
+    " http://www.gregsexton.org/2011/03/improving-the-text-displayed-in-a-fold/
+    fu! CustomFoldText()
+        "get first non-blank line
+        let fs = v:foldstart
+        while getline(fs) =~ '^\s*$' | let fs = nextnonblank(fs + 1)
+        endwhile
+        if fs > v:foldend
+            let line = getline(v:foldstart)
+        else
+            let line = substitute(getline(fs), '\t', repeat(' ', &tabstop), 'g')
+        endif
+
+        " let w = 120
+        let w = winwidth(0) - &foldcolumn - (&number ? 8 : 0)
+        let foldSize = 1 + v:foldend - v:foldstart
+        let foldSizeStr = " " . foldSize . " lines "
+        let foldLevelStr = repeat("+--", v:foldlevel)
+        let lineCount = line("$")
+        let foldPercentage = printf("[%.1f", (foldSize*1.0)/lineCount*100) . "%] "
+        let expansionString = repeat(".", w - strwidth(foldSizeStr.line.foldLevelStr.foldPercentage))
+        return line . expansionString . foldSizeStr . foldPercentage . foldLevelStr
+    endf
+    set foldtext=CustomFoldText()
+    set fillchars="fold: "
 "}}}
 
 " >> View & Session stuff << {{{
@@ -984,10 +1057,42 @@
         if &termencoding == ""
             let &termencoding = &encoding
         endif
-        set encoding=utf-8
-        setglobal fileencoding=utf-8
-        set fileencodings=utf-8,latin1
+        " set encoding=utf-8
+        " setglobal fileencoding=utf-8
+        " set fileencodings=utf-8,latin1
     endif
+    " open .tex files as latex
+    let g:tex_flavor = "latex"
+"}}}
+
+" >> Terminal settings << {{{
+    " map ESC to exit insert mode in terminal
+    tnoremap <Esc> <C-\><C-n>
+    " Terminal colors
+    let g:terminal_color_0='#282828'
+    let g:terminal_color_1='#cc241d'
+    let g:terminal_color_2='#98971a'
+    let g:terminal_color_3='#d79921'
+    let g:terminal_color_4='#458588'
+    let g:terminal_color_5='#b16286'
+    let g:terminal_color_6='#689d6a'
+    let g:terminal_color_7='#a89984'
+    let g:terminal_color_8='#928374'
+    let g:terminal_color_9='#fb4934'
+    let g:terminal_color_10='#b8bb26'
+    let g:terminal_color_11='#fabd2f'
+    let g:terminal_color_12='#83a598'
+    let g:terminal_color_13='#d3869b'
+    let g:terminal_color_14='#8ec07c'
+    let g:terminal_color_15='#ebdbb2'
+    " Highlight terminal cursor
+    highlight TermCursor ctermfg=red guifg=red
+    " start insert mode if terminal win is entered
+    augroup Terminal
+        autocmd!
+        autocmd BufEnter,WinEnter * if &buftype == 'terminal' | startinsert | endif
+    augroup END
+
 "}}}
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -999,7 +1104,6 @@
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 " >> Basic stuff << {{{
-
     " ESC in insert mode
     inoremap <Esc> <NOP>
     inoremap jj <Esc>
@@ -1011,6 +1115,19 @@
     " disable ex mode & execute macros better
     nnoremap @ <NOP>
     nnoremap Q @
+    " Save with CTRL-s
+    nnoremap <c-s> :w<CR>
+"}}}
+
+" >> Navigate windows with CTRL-hjkl << {{{
+    noremap <c-h> <c-w><c-h>
+    noremap <c-j> <c-w><c-j>
+    noremap <c-k> <c-w><c-k>
+    noremap <c-l> <c-w><c-l>
+    tnoremap <c-h> <c-\><c-n><c-w><c-h>
+    tnoremap <c-j> <c-\><c-n><c-w><c-j>
+    tnoremap <c-k> <c-\><c-n><c-w><c-k>
+    tnoremap <c-l> <c-\><c-n><c-w><c-l>
 "}}}
 
 " >> Disabling arrow keys << {{{
@@ -1153,106 +1270,25 @@
     endfunction
 "}}}
 
-" >> Windows for debugging << {{{
-    "let s:debugWin = 'off'
-    "function! ToggleDebugWin()
-    "call ToggleMappingsPyclewn(s:debugWin)
-    "let l:curr_buffer = winbufnr(1)
-    "if s:debugWin == 'off'
-        "ShowMarksOn
-        "ShowMarksToggle
-
-        "silent :Pyclewn gdb
-        "silent :exec "Cfile " . g:Executable
-        "silent sleep 2
-
-        "tabfirst
-        "1wincmd w
-        "exec "buffer " . l:curr_buffer
-
-        "let s:debugWin = "on"
-    "else
-        "tabclose 1
-        "nbclose
-        "ShowMarksOn
-
-        "let s:debugWin = "off"
-    "endif
-    "endfunction
-
-    "" Create the clewn buffers windows in a tab page.
-    "function Pyclewn_CreateTabWindows(debugger)
-    "tabm 0
-
-    "vsplit
-    "wincmd l
-    "view (clewn)_console
-    "setlocal scrolloff=8
-
-    "augroup Pyclewn_Debug
-        "autocmd!
-        "autocmd WinEnter <buffer> $
-    "augroup END
-
-        "split
-        "wincmd w
-        "view (clewn)_threads
-        "split
-        "view (clewn)_breakpoints
-        "split
-        "view (clewn)_backtrace
-
-        "" Resize the windows to have the 'breakpoints' and 'threads' windows
-        "" with a height of 8 and 4.
-        "2wincmd j
-        "resize 4
-        "wincmd k
-        "let l:breakpoints_height = winheight(0)
-        "wincmd k
-        "let l:backtrace_height = winheight(0) + l:breakpoints_height - 8
-        "if l:backtrace_height > 0
-        "exe "resize " . l:backtrace_height
-        "endif
-    "endif
-
-    "2wincmd w
-
-    "windo setlocal fdc=0
-    "windo setlocal nu!
-    "windo setlocal buftype=nofile
-    "windo setlocal bufhidden=hide
-    "windo setlocal nobuflisted
-    "endfunction
-
-    "" opens file in left window when hitting a breakpoint in it's window
-    "function Pyclewn_GotoBreakpoint(fname, lnum)
-    "exe "1wincmd w"
-    "exe "edit " . a:fname
-    "if a:lnum != ""
-        "call cursor(a:lnum, 0)
-    "endif
-    "endfunction
-
-    "" opens file in left window when hitting a backtrace frame in it's window
-    "function Pyclewn_GotoFrame(fname)
-     "call Pyclewn_GotoBreakpoint(a:fname, 0)
-    "endfunction
-""}}}
-
-" >> A Tab for compiling stuff << {{{
-    "let s:buildTab = 'off'
-    "function! ToggleBuildTab()
-    "if s:buildTab == 'off'
-        ":tabnew | :tabm 0  | :copen
-        "if exists("g:BuildDir")
-        "exec "cd " . g:BuildDir
-        "endif
-        "let s:buildTab = 'on'
-    "else
-        ":tabclose 1
-        "let s:buildTab = 'off'
-    "endif
-    "endfunction
+" >> Open Files with ranger << {{{
+    function! OpenRanger()
+    let rangerCallback = { 'name': 'ranger' }
+        function! rangerCallback.on_exit(id, code)
+            silent! bd!
+            try
+                if filereadable('/tmp/chosenfile')
+                    exec system('sed -ie "s/ /\\\ /g" /tmp/chosenfile')
+                    exec 'argadd ' . system('cat /tmp/chosenfile | tr "\\n" " "')
+                    exec 'edit ' . system('head -n1 /tmp/chosenfile')
+                    call system('rm /tmp/chosenfile')
+                endif
+            endtry
+        endfunction
+        enew
+        call termopen('ranger --choosefile=/tmp/chosenfile', rangerCallback)
+        startinsert
+    endfunction
+    map <Leader>x :call OpenRanger()<CR>
 "}}}
 
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -1288,24 +1324,54 @@
     "endfunction
 "}}}
 
-" open file with ranger
-fun! RangerChooser()
-    exec "silent !ranger --choosefile=/tmp/chosenfile " . expand("%:p:h")
-    if filereadable('/tmp/chosenfile')
-        exec 'edit ' . system('cat /tmp/chosenfile')
-        call system('rm /tmp/chosenfile')
-    endif
-    redraw!
-endfun
-map <Leader>x :call RangerChooser()<CR>
+" >> A Tab for compiling stuff << {{{
+    "let s:buildTab = 'off'
+    "function! ToggleBuildTab()
+    "if s:buildTab == 'off'
+        ":tabnew | :tabm 0  | :copen
+        "if exists("g:BuildDir")
+        "exec "cd " . g:BuildDir
+        "endif
+        "let s:buildTab = 'on'
+    "else
+        ":tabclose 1
+        "let s:buildTab = 'off'
+    "endif
+    "endfunction
+"}}}
+
+" >> The "Init plaintext writing" function << {{{
+    function Write()
+        call deoplete#enable()
+        " let g:deoplete#enable_ignore_case = 1
+        let g:deoplete#enable_refresh_always=1
+        let g:deoplete#max_list = 300
+        let b:deoplete_disable_auto_complete = 0
+        let g:deoplete#auto_complete_delay=0
+        let g:deoplete#auto_complete_start_length=1
+        call deoplete#custom#set('look', 'min_pattern_length', 1)
+        call deoplete#custom#set('ultisnips', 'rank', 999)
+        call deoplete#custom#set('_', 'sorters', ['sorter_word'])
+        " call deoplete#custom#set('_', 'matchers', ['matcher_full_fuzzy'])
+        call deoplete#custom#set('_', 'matchers', ['matcher_head', 'matcher_full_fuzzy'])
+        let b:deoplete_sources = [ 'ultisnips', 'file', 'look', 'buffer']
+        setlocal spell spelllang=en_us
+    endfunction
+    augroup plaintext
+        autocmd!
+        autocmd BufEnter *.tex call Write()
+    augroup END
+"}}}
+
+
 
 " automatically source vimrc
 augroup FileTypeVim
     autocmd!
     " Source your vimrc on save
-    autocmd! BufWritePost .vimrc source %
+    autocmd! BufWritePost $MYVIMRC source $MYVIMRC
     " Apply modeline option after re-openning the vimrc file (that is after sourcing it)
-    autocmd! BufWritePost .vimrc set modeline | doautocmd BufRead
+    autocmd! BufWritePost $MYVIMRC set modeline | doautocmd BufRead
 augroup END
 
 " get svn commit message from last git commit
@@ -1320,11 +1386,23 @@ augroup HelpFiles
     autocmd BufEnter *.txt if &buftype == 'help' | wincmd L | endif
 augroup END
 
-" automatically refresh Airline
-" augroup Airline
-"     autocmd!
-"     autocmd WinEnter * :AirlineRefresh
-" augroup END
+augroup ManFiles
+    autocmd!
+    " open man vertically on the right
+    autocmd FileType man wincmd L
+    " close automatically if hidden
+    "autocmd BufHidden * if &l:buftype ==# 'nofile' | :bd | endif
+augroup END
+
+"{{{
+    "AUTOLOAD_MODULE="gcc/4.9.3" zsh -c module li
+    "AUTOLOAD_MODULE="Vlive/dev" zsh -c make -j8
+    "
+    "Unite build:make:-j5:-C:`DIR`:install
+    " :Unite -horizontal build:make:-j1:-C:~/WORK/Repos/Vlive/Vampir/vpath_server:install
+
+"}}}
+
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 "}}}
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
